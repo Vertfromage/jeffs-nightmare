@@ -1,0 +1,776 @@
+<!doctype>
+<html>
+		<head><meta charset="utf-8" />
+        <script type="text/javascript" src="https://js13kgames.com/src/near-api-js.js"></script>
+				<style>
+          canvas{
+            /* background: url(background.svg); */
+            background: linear-gradient(to bottom right,indigo,black,black,indigo);
+          }
+        </style>
+      </head> 
+		<body style="margin:0;overflow: hidden;">
+            <div class="container">
+                <div class="sign-in" style="display: none;">
+                  <h1>Welcome!</h1>
+                  <p>You'll need to sign in to call contract methods:</p>
+                  <button class="btn btn-primary" style="background-color: #0072CE;">Sign In</button>
+                </div>
+
+                <div class="without" style="display:none">
+                  <button class="btn btn-primary" style="background-color: #0072CE;">Play Without Decentralized</button>
+                </div>
+            
+                <div class="after-sign-in" style="display: none;">
+                  <canvas id=canvas>   
+                  </canvas>
+                </div>
+              </div>
+	</body>
+</html>
+<script type='module'>
+var CONTRACT_NAME='dev-1630695919182-94167023923152';
+
+async function connect() {
+    let near = await nearApi.connect({
+    nodeUrl: "https://rpc.testnet.near.org",
+    walletUrl: "https://wallet.testnet.near.org",
+    helperUrl: "https://helper.testnet.near.org",
+    explorerUrl: "https://explorer.testnet.near.org",
+    networkId: 'testnet',
+    keyStore: new window.nearApi.keyStores.BrowserLocalStorageKeyStore(window.localStorage, 'crystal')
+    });
+
+    window.walletConnection = new nearApi.WalletConnection(near);
+    let account;
+    if (window.walletConnection.isSignedIn()) {
+        // Logged in account, can write as user signed up through wallet
+        account = walletConnection.account();
+    } else {
+        // Contract account, normally only gonna work in read only mode
+        account = new nearApi.Account(near.connection, CONTRACT_NAME);
+        //console.log(account);
+    }
+
+}
+
+// Log in user using NEAR Wallet on "Sign In" button click
+document.querySelector('.sign-in .btn').addEventListener('click', () => {
+  window.walletConnection.requestSignIn(CONTRACT_NAME, 'Crystal testing');
+});
+var withoutDecentralize = false;
+// play without decentralized
+document.querySelector('.without .btn').addEventListener('click', () => {
+  console.log("Without");
+  withoutDecentralize = true;
+  updateUI();
+});
+
+
+function updateUI() {
+  console.log("Update UI");
+  if(withoutDecentralize){
+    Array.from(document.querySelectorAll('.after-sign-in')).map(it => it.style = 'display: block;');
+    Array.from(document.querySelectorAll('.sign-in')).map(it => it.style = 'display: none;');
+    Array.from(document.querySelectorAll('.without')).map(it => it.style = 'display: none;'); 
+    ifLoggedIn();
+  }else if (!window.walletConnection.getAccountId()) {
+    Array.from(document.querySelectorAll('.sign-in')).map(it => it.style = 'display: block;');
+    Array.from(document.querySelectorAll('.without')).map(it => it.style = 'display: block;'); 
+  }else {
+    Array.from(document.querySelectorAll('.after-sign-in')).map(it => it.style = 'display: block;');
+    var userName = window.walletConnection.getAccountId();
+    userName = userName.slice(0,userName.lastIndexOf('.'));
+
+    ifLoggedIn();
+  }
+}
+
+// after login?
+
+nearApi.nearInitPromise = connect()
+  .then(updateUI)
+  .catch(console.error);
+	
+	import Client, { HTTP } from 'https://cdn.jsdelivr.net/npm/drand-client/drand.js'
+	
+	const chainHash = '8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce' // (hex encoded)
+	const urls = [
+	  'https://api.drand.sh',
+	  'https://drand.cloudflare.com'
+	  // ...
+	]
+ 
+	
+	function ifLoggedIn(){
+    if(withoutDecentralize){
+    var userName="Player";}else{
+          var userName = window.walletConnection.getAccountId();
+          userName = userName.slice(0,userName.lastIndexOf('.'));
+    }
+		//** All the funny variables are because some of the original variable names were in my game, 
+//** so I had to change them to keep it from crashing.
+//** If someone else uses this code and it won't work they may need to change other variables */
+// https://xem.github.io/js1k19/miniSynth/
+//***PIANO****
+// testing
+var test =[1,2,3];
+// default speed
+var mySong = [1,1,1,2,2,3,3,4,28,25,28,23,25,24,21,21,21];
+//200 speed
+var juliaSong = [0,7,12,9,7,12,9,0,31,7,12,9,28,7,12,26,9,0,7,28,12,9,7,12,9,0,7,12,9,7,12,9,0,7,12,9,28,7,12,26,9,0,7,28,12,9,7,12,9,0,7,12,9,7,12,9,0];
+let on = false;	 
+var timerId;
+var speed = 200;
+var builtSong =[];
+var count=0;
+var audioCtx = [];
+var i,V,uh,vv,ch,pp,b,w,D,tick,P,rr,j,source;
+
+
+function buildsong(mySong, len, piano){
+  let i =0;
+  let j;
+  mySong.forEach(element => {
+          j=i%10;
+          builtSong.push( audioCtx[j].createBuffer(1, 1e6, 44100));
+          builtSong[i].getChannelData(0).set(getD(element,len,piano));
+          i++;
+  });
+}
+
+function playTheSong(song){
+  let elm = 0;
+  timerId= setTimeout(function run() {
+  if(elm==builtSong.length){
+      playTheSong(song);
+  }else{
+  playTheNote(elm);
+  elm++;
+  timerId = setTimeout(run, 200);}
+  }, 200);
+  on = true;
+}
+
+function playTheNote(note){
+  j = note%10;
+  source = audioCtx[j].createBufferSource();
+  source.buffer = builtSong[note];
+  source.connect(audioCtx[j].destination);
+  source.start();
+}
+
+function getF(i){ return 130.81 * 1.06 ** i;}
+
+function getD(note, len, piano){
+    note = getF(note);
+    for(
+
+        // V: note length in seconds
+        V = len,
+        
+        // O: piano is selected
+        uh = piano,
+        
+        // Temp vars for guitar synthesis
+        vv = [],
+        pp = ch = 0,
+        
+        // Modulation
+        // This function generates the i'th sample of a sinusoidal signal with a specific frequency and amplitude
+        b = (note, tt, aa, tick) => Math.sin(note / tt * 6.28 * aa + tick),
+        
+        // Instrument synthesis
+        w = (note, tt) =>
+        
+          uh
+        
+          // Piano
+          ? Math.sin(note / 44100 * tt * 6.28 + b(note, 44100, tt, 0) ** 2 + .75 * b(note, 44100, tt, .25) + .1 * b(note, 44100, tt, .5))
+          
+          // Guitar
+          : (
+            P = 44100 / tt,
+            rr = 0,
+            vv.length <= 1 + ~~P
+            ? (vv.push(2 * Math.random() - 1), vv[vv.length - 1])
+            : (vv[pp] = .5 * (
+              vv[pp >= vv.length - 1 ? 0 : pp + 1] + vv[pp]
+              ),
+              pp >= ~~P && (
+                pp < 1 + ~~P 
+                ? ch % 100 >= ~~(100 * (P - ~~P)) &&(rr = 1, vv[pp+1] = .5 * (vv[0] + vv[pp + 1]), ch++)
+                : rr = 1
+              ),
+              pp = rr ? 0 : pp + 1,
+              vv[pp]
+            )
+          ),
+        // Sound samples
+        D = [],
+        
+        // Loop on all the samples
+        tick = 0;
+        tick < 44100 * V;
+        tick++
+        ){
+        
+        // Fill the samples array
+        D[tick] =
+        
+          // The first 88 samples represent the note's attack
+          tick < 88 
+          ? tick / 88.2 * w(tick, note) 
+          
+          // The other samples represent the rest of the note
+          : (1 - (tick - 88.2) / (44100 * (V - .002))) ** (uh ? (.5 * Math.log(1e4 * note / 44100)) ** 2 : 1) * w(tick, note);
+        }
+        return D;
+}
+
+var shootNoise,
+hitNoise;
+//***END PIANO****
+function playOneNote(note){
+    source = audioCtx[10].createBufferSource();
+    source.buffer = note;
+    source.connect(audioCtx[10].destination);
+    source.start();
+}
+	
+    var isDecentralized=false;
+    var myRandom;
+	  var tk =0;
+	
+	async function drand() {
+	  const options = { chainHash }
+	
+	  const client = await Client.wrap(HTTP.forURLs(urls, chainHash), options)
+	
+	  // e.g. use the client to get the latest randomness round:
+	  const res = await client.get()
+	
+	  myRandom = res.randomness;
+
+	  isDecentralized =true;
+	}
+	
+	
+
+	
+	function useRandom(){
+	  tk++;
+	  if(tk>=myRandom.length){
+		tk=0;
+	  }
+	  return parseInt(myRandom[tk],16)*.1*2-1.5;
+
+	}
+  if(!withoutDecentralize){
+    drand();
+  }
+  
+	var k,u,r,d,l,s;
+  var hits=0;
+  var health=100;
+	// initialize 2D a (c)
+	// initialize game state (s)
+	// initialize keys states (u,r,d,l for directions, k for all the keyboard)
+	var c = canvas.getContext`2d`, k = [u = r = d = l = s = 0];
+	canvas.width = innerWidth;
+	canvas.height = innerHeight;
+// (initialize your global variables here)
+c.w = innerWidth;
+c.h = innerHeight;
+// update u,l,d,r globals when an arrow key/wasd/zqsd is pressed or released
+// Set up variables
+
+// DRAW LOOP
+let reqAnimationId;
+function smoothAnimation(e) {
+    // animtion
+	canvas.width = innerWidth, canvas.height = innerHeight;
+	c.w=canvas.width, c.h = canvas.height;
+    switch (s) {
+        case 0: title();
+            break;
+        case 1:
+			game();
+            break;
+        case 2:
+			end();
+            break;
+    }
+    reqAnimationId = requestAnimationFrame(smoothAnimation)
+}
+// to start
+function start() {
+    reqAnimationId = requestAnimationFrame(smoothAnimation)
+}
+
+start();
+
+// handle click/touch events
+// globals x and y contain the pointer's coordinates
+// in each screen, you can make a click update the game state
+// ex: "game over if we click on the bottom half of the screen" => `if(y>h/2)s=3;`
+onclick = e => {
+    let x = e.pageX, y = e.pageY;
+    switch (s) {
+        case 0:	
+        if(inBox(x,y,c.w/4, c.w/4+c.w/2, c.h/3,c.h*.8)){
+        if(!withoutDecentralize){
+          drand();
+        }
+				if(!on){
+    				on=true;
+    			for(i=0;i<11;i++){
+      				audioCtx[i]= new AudioContext;
+    			}
+    			shootNoise= audioCtx[10].createBuffer(1, 1e6, 44100);
+  				shootNoise.getChannelData(0).set(getD(32,3,false));
+				hitNoise = audioCtx[10].createBuffer(1, 1e6, 44100);
+				hitNoise.getChannelData(0).set(getD(4,4,false));
+   				 // build the song
+    			buildsong(juliaSong, 2, true);
+
+    			// play the song
+    			playTheSong(builtSong);
+    		}
+				s=1;}
+            break;
+        case 1:
+			shootlaser(x,y);
+            break;
+        case 2:
+        if(inBox(x,y,c.w/3,c.w/3*2, c.h*.8 , c.h*.8+c.h/10)){
+              hits=0;health=100;
+              s=1;
+            }else if(inBox(x,y,c.w/4, c.w/4+c.w/2, c.h/3,c.h*.8)){
+                if(!withoutDecentralize){
+                  window.walletConnection.signOut();
+                }
+                window.location.replace(window.location.origin + window.location.pathname);
+                s=0;
+              }
+            break;
+    }
+}
+
+function inBox(x,y,w1,w2,h1,h2){
+	if(x>w1&&x<w2&&y>h1&&y<h2){	return true;}}
+
+function title() {
+    c.w = canvas.width;
+    c.h = canvas.height;
+
+	c.fillStyle = '#4B0082';
+    c.fillRect(c.w/4, c.h/3, c.w/2, c.h/2);
+	c.fillStyle = '#000000';
+    c.fillRect(c.w/4+10, c.h/3+10, c.w/2-20, c.h/2-20);
+    
+    tx("Hello "+userName+", thanks for playing!", c.w/2, c.h*.9,2,'#a4f3f4');
+    tx("Jeff's Nightmare", c.w / 2, c.h * .55, 4, '#DEC58F');
+    tx("Help Jeff fight his fears!", c.w / 2, c.h * .62, 2, '#a4f3f4');
+    
+    tx('CLICK TO START!', c.w /2, c.h * .75, 1.5, '#DEC58F');
+
+}
+
+function game(){
+	while(monsters.length<15){
+		makeMonster();
+	}
+	
+	playMonsters();
+	playLasers();
+	drawJeff();
+	moveJeff();
+  if(health<1){
+    s=2;
+  }
+
+  c.fillStyle = '#0000007f';
+  c.fillRect(0, 0, c.w, c.h/12);
+	tx("[Jeff's Nightmare]", c.w / 5, c.h*.05, 2.5, '#a4f3f4');
+	tx("Score: "+hits+"  Courage: "+Math.floor(health), c.w*.6, c.h*.05, 2.5, '#a4f3f4');
+}
+
+function end(){
+  c.w = canvas.width;
+    c.h = canvas.height;
+
+	c.fillStyle = '#4B0082';
+    c.fillRect(c.w/4, c.h/3, c.w/2, c.h/2);
+	  c.fillStyle = '#000000';
+    c.fillRect(c.w/4+10, c.h/3+10, c.w/2-20, c.h/2-20);
+
+    tx("Hey "+userName+", want to play again?", c.w/2, c.h*.3,2,'#a4f3f4');
+    tx("Jeff's Nightmare", c.w / 2, c.h * .55, 4, '#DEC58F');
+    tx("Unfortunately Jeff woke up... ", c.w / 2, c.h * .62, 2, '#a4f3f4');
+    tx("Your score: "+hits, c.w / 2, c.h * .7, 1.7, '#a4f3f4');
+    
+	c.fillStyle = '#4B0082';
+    c.fillRect(c.w*.42+5, c.h*.72, c.w*.15, c.h/20);
+    c.fillStyle = '#0000007f';
+    c.fillRect(c.w*.42+8, c.h*.72+3, c.w*.15-6, c.h/20-6);
+    tx('Click to logout.', c.w /2, c.h * .75+2, 1.5, '#DEC58F');
+
+		c.fillStyle = '#4B0082';
+    c.fillRect(c.w/3, c.h*.8, c.w/3, c.h/10);
+	  c.fillStyle = '#0000007f';
+    c.fillRect(c.w/3+5, c.h*.8+5, c.w/3-10, c.h/10-10);
+	  tx("CLICK TO RESTART!",c.w/2, c.h*.87, 2.7, 'pink');
+		
+}
+
+function tx(t, w, h, f, s) {
+    c.textAlign = 'center';
+    c.fillStyle = s;
+    c.font = f + 'vw Consolas';
+    c.fillText(t, w, h);
+}
+
+
+//*** Jeff START ***
+var timedMove=0;
+const mouse = {
+  x: null,
+  y: null,
+};
+
+const jeff = new Image();
+
+jeff.src = "alternateSpaceCowboy.png";
+
+
+
+const hero = {
+  x: c.w/2,
+  y: c.h*.9,
+  w: 135,
+  h: 118,
+  angle: 0,
+  dead: false,
+  img: jeff
+}
+
+const gunTip = {
+  x: 0,
+  y: 0,
+}
+
+// This keeps it from adjusting distance too frequently
+var oldMouse={x:0,y:0};
+
+
+class Laser{
+	constructor(x,y,v){
+	
+		this.x = x;
+		this.y = y;
+		this.v = v;
+		this.outOfBounds = false;
+	}
+	
+	draw(){
+		c.fillStyle = "steelblue"; // Red color
+    	c.beginPath(); //Start path
+    	c.arc(this.x, this.y, 2.5, 0, Math.PI * 2, true); // Draw a point using the arc function of the canvas with a point structure.
+    	
+		c.fill(); // Close the path and fill.
+	};
+
+	update(){
+		this.x += this.v.x*5;
+		this.y += this.v.y*5;
+		if(this.x>c.w||this.x<0||this.y>c.h||this.y<0){
+			this.outOfBounds=true;
+		}
+	};
+
+	isClose(x, y, d){
+		var dist = Math.sqrt((this.x - x)**2 + (this.y - y)**2);
+		if (dist < d) {
+			return true;
+		} else {
+			return false;
+		}
+	};
+}
+
+const lasers = [];
+
+function destroyLaser (laser) {
+	for (var i = 0; i < lasers.length; i++) {
+		if (lasers[i] === laser) {
+			lasers[i] = null;
+			lasers.splice(i, 1);
+			break;
+		}
+	}
+}
+
+function shootlaser(x,y){
+		let velocity = getVelocity({x:gunTip.x,y:gunTip.y},{x:x,y:y});
+		lasers.push(new Laser( gunTip.x,gunTip.y, velocity));
+		velocity = getVelocity({x:gunTip.x,y:gunTip.y},{x:x,y:y+20});
+		lasers.push(new Laser( gunTip.x,gunTip.y, velocity));
+		velocity = getVelocity({x:gunTip.x,y:gunTip.y},{x:x,y:y-20});
+		lasers.push(new Laser( gunTip.x,gunTip.y, velocity));
+		playOneNote(shootNoise);
+}
+
+function playLasers(){
+	lasers.forEach((laser)=>{
+		laser.update();
+		laser.draw();
+		if(laser.outOfBounds){
+			destroyLaser(laser);
+		}
+		monsters.forEach((monster)=>{
+			if(monster.isClose(laser.x,laser.y, 1)){
+				monster.y = -100;
+				monster.outOfBounds=true;
+				hits++;
+				playOneNote(hitNoise);
+			}
+		})
+	})
+}
+
+// uses radians
+function getVelocity(from,to){
+	var angle = Math.atan2(to.y-from.y,to.x-from.x);
+	var velocity = {
+		x: Math.cos(angle),
+		y: Math.sin(angle)
+	}
+	return velocity;
+}
+
+onmousemove = e => { 
+  var rect = canvas.getBoundingClientRect();
+  if(Math.abs(oldMouse.x-mouse.x)>c.w/5||Math.abs(oldMouse.y-mouse.y)>c.h/4){
+  oldMouse.x = mouse.x;
+  oldMouse.y = mouse.y;}
+  mouse.x = e.clientX - rect.left,
+  mouse.y = e.clientY - rect.top;
+}
+
+function drawhero(hero)
+{
+  c.save();
+  c.translate(hero.x, hero.y);
+
+  // 3. Use hero's angle to rotate its "sprite"
+  c.rotate(hero.angle);
+  
+  var x = -(hero.w/2);
+  var y = -(hero.h/2);
+  c.drawImage(hero.img,x,y,hero.w,hero.h);
+  c.restore();
+}
+
+function setGunOrigin(){
+	gunTip.x = hero.x + (hero.w/2) * Math.cos(hero.angle);
+	gunTip.y = hero.y + (hero.w/2) * Math.sin(hero.angle);
+}
+
+function drawJeff() {
+
+  /// 1. --- GET THE ANGLE
+  LookAt(hero, mouse.x, mouse.y);
+
+  setGunOrigin(hero.x+hero.w, hero.y+hero.h*.4);
+  
+  /// 2. --- Rotate the hero and draw
+  drawhero(hero);
+}
+
+function LookAt(hero, dx, dy)
+{
+  // angle between 2 points
+  hero.angle = Math.atan2(dy - hero.y, dx - hero.x);
+}
+
+function moveJeff(){
+  // if hero.x - oldMouse.x
+  if(hero.x-oldMouse.x>1){
+    hero.x-=1;
+  }else if(hero.x-oldMouse.x<-1){
+    hero.x+=1;
+  }
+  if(hero.y-oldMouse.y>1){
+    hero.y-=1;
+  }else if(hero.y-oldMouse.y<-1){
+    hero.y+=1;
+  }
+}
+
+//Jeff END
+
+//Monsters
+
+const monsters = [];
+
+function makeMonster(){
+	
+	let x = Math.random()*c.w;
+	let r = Math.random()*2+.2;
+	//speed
+	let sX, sY;
+	if(isDecentralized){
+		sX= useRandom();
+		sY= useRandom();
+	}else{
+		sX= Math.random() * 3 - 1.5;
+		sY = Math.random() * 3 - 1.5;
+	}
+	monsters.push(makeSprite(c,32,32,"weird.png",1,10,x,-100,r,{x:sX,y:sY}));
+}
+
+function playMonsters(){
+	monsters.forEach((monster)=>{
+		monster.move();
+		monster.update();
+		monster.render();
+    if(monster.isClose(jeff.x,jeff.y,1.2)){
+      health=health-0.2;
+    }
+		if(monster.outOfBounds){
+			destroyMonster(monster);
+		}
+	})
+}
+
+function destroyMonster (monster) {
+	for (var i = 0; i < monsters.length; i++) {
+		if (monsters[i] === monster) {
+			monsters[i] = null;
+			monsters.splice(i, 1);
+			monster=null;
+		}
+	}
+}
+
+function sprite(options) {
+
+var that = {},
+	frameIndex = 0,
+	tickCount = 0,
+	spot = 0,
+	ticksPerFrame = options.ticksPerFrame || 0,
+	numberOfFrames = options.numberOfFrames || 1;
+
+that.context = options.context;
+that.w = options.width;
+that.h = options.height;
+that.x = options.x;
+that.y = options.y;
+that.image = options.image;
+that.scaleRatio = 1;
+that.s = options.s;
+that.seq = [];
+that.dead = false;
+that.outOfBounds= false;
+
+that.newSeq = function (seq) {
+	spot = 0;
+	frameIndex = 0;
+	that.seq = seq;
+};
+
+that.switch = function (x) {
+	frameIndex = x;
+};
+
+that.update = function () {
+
+	tickCount += 1;
+
+	if (tickCount > ticksPerFrame) {
+
+		tickCount = 0;
+
+		// If the current frame index is in range
+		if (frameIndex < numberOfFrames - 1) {
+			// Go to the next frame
+			frameIndex += 1;
+			if (that.seq.length > 0) {
+				frameIndex = that.seq[spot];
+				spot += 1;
+			}
+		} else if (that.seq.length < 1) {
+			frameIndex = 0;
+		}
+		if (spot > that.seq.length - 1) {
+			spot = 0;
+		}
+	}
+};
+that.render = function () {
+	// Draw the animation
+	that.context.drawImage(
+		that.image,
+		frameIndex * that.w / numberOfFrames,
+		0,
+		that.w / numberOfFrames,
+		that.h,
+		that.x,
+		that.y,
+		that.w / numberOfFrames * that.scaleRatio,
+		that.h * that.scaleRatio,
+	);
+};
+that.getFrameWidth = function () {
+	return that.w / numberOfFrames;
+};
+that.isClose = function (x, y, t) {
+	var dx = (that.x + that.getFrameWidth() / 2 * that.scaleRatio) - (x + that.getFrameWidth() / 2),
+		dy = (that.y + that.getFrameWidth() / 2 * that.scaleRatio) - (y + that.getFrameWidth() / 2);
+
+	var dist = Math.sqrt(dx * dx + dy * dy);
+
+	if (dist < that.getFrameWidth() * that.scaleRatio * t) {
+		return true;
+	} else {
+		return false;
+	}
+};
+that.move = function(){
+	that.x+= that.s.x;
+	that.y+= that.s.y;
+	if(that.x>c.w || that.y>c.h || that.x<0 ||that.y<-100){
+		that.outOfBounds = true;
+	}
+};
+return that;
+}
+// End sprite function
+
+function makeSprite(c, w, h, img, f, t, x, y, r, s) {
+let i = new Image();
+let sp = sprite({
+	context: c,
+	width: w,
+	height: h,
+	image: i,
+	numberOfFrames: f,
+	ticksPerFrame: t,
+	s: s
+});
+sp.x = x;
+sp.y = y;
+sp.scaleRatio = r;
+i.src = img;
+return sp;
+}
+
+}
+
+
+
+
+
+</script>
